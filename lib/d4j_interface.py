@@ -105,7 +105,15 @@ class D4JRepositoryInterface():
         self.language = 'java'
         self.initial_coverage_getter = "get_failing_tests_covered_classes"
 
+    def _get_most_similar_passing_test_snippet(self, bug_name):
+        with open(os.path.join(BUG_INFO_DIR, bug_name, "token_similarity.json")) as f:
+            similarities = json.load(f)
+        sorted_similarities = sorted(similarities.items(), key = lambda item:item[1], reverse = True)
+        most_similar_test_signature = sorted_similarities[0][0]
 
+        most_similar_test_snippet = self.get_test_snippet(most_similar_test_signature)
+        return most_similar_test_snippet
+        
     def _load_fail_info(self, bug_name):
         fail_info = dict()
         with open(os.path.join(BUG_INFO_DIR, bug_name, "failing_tests")) as f:
