@@ -1,0 +1,313 @@
+{
+    "time": 1717177116.2221227,
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a debugging assistant. You will be presented with a failing test, and tools (functions) to access the source code of the system under test (SUT). Your task is to provide a step-by-step explanation of how the bug occurred, based on the failing test and the information you retrieved using tests about the SUT. You will be given 9 chances to interact with functions to gather relevant information. An example answer would look like follows.\n\nTitle: Diagnosis of test `testGenerateURLFragment`\nDetails: The test `testGenerateURLFragment` checks whether HTML entities such as `&quot;` are correctly escaped to their corresponding character by the `StandardToolTipTagFragmentGenerator.generateToolTipFragment` method. However, the test failure indicates that this is not the case. Following the execution path, we find that `StandardToolTipTagFragmentGenerator.generateToolTipFragment` is not escaping any HTML code; instead, it is using its input `toolTipText` as is. Consequently, un-escaped strings are being returned, which leads to the error demonstrated by the test.\n\nAfter providing this diagnosis, you will be prompted to suggest which methods would be the best locations to be fixed. The answers should be in the form of `ClassName.MethodName(ArgType1, ArgType2, ...)` without commentary (one per line), as your answer will be automatically processed before finally being presented to the user."
+        },
+        {
+            "role": "user",
+            "content": "The test `['org.apache.commons.lang3.StringUtilsEqualsIndexOfTest.testContainsAny_StringWithBadSupplementaryChars()']` failed.\nThe test looks like:\n\n```java\n182 :     public void testContainsAny_StringWithBadSupplementaryChars() {\n183 :         // Test edge case: 1/2 of a (broken) supplementary char\n186 :         assertEquals(false, StringUtils.containsAny(CharUSuppCharLow, CharU20001)); // error occurred here\n190 :     }\n```\n\nThe passing test with the highest token similarity to the failing test looks like:\n\n ```195 :     public void testContainsAny_StringWithSupplementaryChars() {\n196 :         assertEquals(true, StringUtils.containsAny(CharU20000 + CharU20001, CharU20000));\n197 :         assertEquals(true, StringUtils.containsAny(CharU20000 + CharU20001, CharU20001));\n198 :         assertEquals(true, StringUtils.containsAny(CharU20000, CharU20000));\n199 :         // Sanity check:\n200 :         assertEquals(-1, CharU20000.indexOf(CharU20001));\n201 :         assertEquals(0, CharU20000.indexOf(CharU20001.charAt(0)));\n202 :         assertEquals(-1, CharU20000.indexOf(CharU20001.charAt(1)));\n203 :         // Test:\n204 :         assertEquals(false, StringUtils.containsAny(CharU20000, CharU20001));\n205 :         assertEquals(false, StringUtils.containsAny(CharU20001, CharU20000));\n206 :     }\n```\n\nIt failed with the following error message and call stack:\n\n```\njunit.framework.AssertionFailedError: expected:<false> but was:<true>\n\tat org.apache.commons.lang3.StringUtilsEqualsIndexOfTest.testContainsAny_StringWithBadSupplementaryChars(StringUtilsEqualsIndexOfTest.java:186)\n```\n\nStart by calling the `get_failing_tests_covered_classes` function."
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_failing_tests_covered_classes",
+                "arguments": "{}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_failing_tests_covered_classes",
+            "content": "{\"org.apache.commons.lang3\": [\"ArrayUtils\", \"StringUtils\"]}"
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_failing_tests_covered_methods_for_class",
+                "arguments": "{\n  \"class_name\": \"org.apache.commons.lang3.StringUtils\"\n}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_failing_tests_covered_methods_for_class",
+            "content": "[\".containsNone(java.lang.CharSequence, char[])\", \".containsNone(java.lang.CharSequence, java.lang.String)\", \".indexOfAny(java.lang.CharSequence, char[])\", \".containsAny(java.lang.CharSequence, char[])\", \".indexOfAny(java.lang.CharSequence, java.lang.String)\", \".indexOfAnyBut(java.lang.String, java.lang.String)\", \".isEmpty(java.lang.CharSequence)\", \".containsAny(java.lang.CharSequence, java.lang.String)\", \".indexOfAnyBut(java.lang.CharSequence, char[])\"]"
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_code_snippet",
+                "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])\"\n}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_code_snippet",
+            "content": "\"1443 :     public static boolean containsAny(CharSequence cs, char[] searchChars) {\\n1444 :         if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\\n1445 :             return false;\\n1446 :         }\\n1447 :         int csLength = cs.length();\\n1448 :         int searchLength = searchChars.length;\\n1449 :         int csLast = csLength - 1;\\n1450 :         int searchLast = searchLength - 1;\\n1451 :         for (int i = 0; i < csLength; i++) {\\n1452 :             char ch = cs.charAt(i);\\n1453 :             for (int j = 0; j < searchLength; j++) {\\n1454 :                 if (searchChars[j] == ch) {\\n1455 :                     if (i < csLast && j < searchLast && ch >= Character.MIN_HIGH_SURROGATE && ch <= Character.MAX_HIGH_SURROGATE) {\\n1456 :                             // missing low surrogate, fine, like String.indexOf(String)\\n1457 :                         if (searchChars[j + 1] == cs.charAt(i + 1)) {\\n1458 :                             return true;\\n1459 :                         }\\n1460 :                     } else {\\n1461 :                         // ch is in the Basic Multilingual Plane\\n1462 :                         return true;\\n1463 :                     }\\n1464 :                 }\\n1465 :             }\\n1466 :         }\\n1467 :         return false;\\n1468 :     }\""
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_code_snippet",
+                "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)\"\n}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_code_snippet",
+            "content": "\"1497 :     public static boolean containsAny(CharSequence cs, String searchChars) {\\n1498 :         if (searchChars == null) {\\n1499 :             return false;\\n1500 :         }\\n1501 :         return containsAny(cs, searchChars.toCharArray());\\n1502 :     }\""
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_code_snippet",
+                "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.indexOfAny(java.lang.CharSequence, char[])\"\n}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_code_snippet",
+            "content": "\"1371 :     public static int indexOfAny(CharSequence cs, char[] searchChars) {\\n1372 :         if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\\n1373 :             return INDEX_NOT_FOUND;\\n1374 :         }\\n1375 :         int csLen = cs.length();\\n1376 :         int searchLen = searchChars.length;\\n1377 :         for (int i = 0; i < csLen; i++) {\\n1378 :             char ch = cs.charAt(i);\\n1379 :             for (int j = 0; j < searchLen; j++) {\\n1380 :                 if (searchChars[j] == ch) {\\n1381 :                         // ch is a supplementary character\\n1382 :                         return i;\\n1383 :                 }\\n1384 :             }\\n1385 :         }\\n1386 :         return INDEX_NOT_FOUND;\\n1387 :     }\""
+        },
+        {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_code_snippet",
+                "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.indexOfAny(java.lang.CharSequence, java.lang.String)\"\n}"
+            }
+        },
+        {
+            "role": "function",
+            "name": "get_code_snippet",
+            "content": "\"1411 :     public static int indexOfAny(CharSequence cs, String searchChars) {\\n1412 :         if (isEmpty(cs) || isEmpty(searchChars)) {\\n1413 :             return INDEX_NOT_FOUND;\\n1414 :         }\\n1415 :         return indexOfAny(cs, searchChars.toCharArray());\\n1416 :     }\""
+        },
+        {
+            "role": "assistant",
+            "content": "Based on the failing test `testContainsAny_StringWithBadSupplementaryChars()` in the class `org.apache.commons.lang3.StringUtils`, it is trying to test the `containsAny` method. The method is overloaded, with one version taking a `CharSequence` and a `char[]` as parameters, and another version taking a `CharSequence` and a `String` as parameters. Both methods check if any of the characters specified in the `searchChars` parameter exist in the input `CharSequence`.\n\nLooking at the code snippet for the `containsAny(CharSequence, char[])` method, we can see that it iterates over the characters in the input `CharSequence` and the `searchChars` array. If a match is found, it checks if the character is a supplementary character, and if so, it returns `true`. If the character is not a supplementary character, it also returns `true`. If no match is found, it returns `false`.\n\nUnfortunately, we don't have access to the implementation of the `containsAny(CharSequence, String)` method. However, based on the code snippet of the `containsAny(CharSequence, char[])` method, we can assume that the `containsAny(CharSequence, String)` method likely delegates to the `containsAny(CharSequence, char[])` method, but converts the `searchChars` `String` to a `char[]` using `searchChars.toCharArray()`.\n\nThe failing test is expecting the result of `StringUtils.containsAny(CharUSuppCharLow, CharU20001)` to be `false`. However, it is returning `true`. This suggests that the `CharUSuppCharLow` contains at least one character from the `CharU20001` array.\n\nTo identify the cause of the issue, we need more information about the values of `CharUSuppCharLow` and `CharU20001`. Unfortunately, we don't have access to the values of these variables in the failing test.\n\nTo fix this issue, we need to investigate why the `containsAny` method is returning `true` instead of `false` in this case. This could be due to a bug in the implementation of the method, or it could be caused by incorrect test inputs.\n\nSuggested fix:\n- Investigate the implementation of the `containsAny(CharSequence, char[])` method to ensure it handles supplementary characters correctly.\n- Investigate the implementation of the `containsAny(CharSequence, String)` method and ensure it correctly delegates to the `containsAny(CharSequence, char[])` method.\n\nPossible methods to fix:\n- `org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])`\n- `org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)`"
+        },
+        {
+            "role": "user",
+            "content": "Based on the available information, provide the signatures of the most likely culprit methods for the bug. Your answer will be processed automatically, so make sure to only answer with the accurate signatures of all likely culprits (in `ClassName.MethodName(ArgType1, ArgType2, ...)` format), without commentary (one per line). "
+        },
+        {
+            "role": "assistant",
+            "content": "org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])\norg.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)"
+        }
+    ],
+    "interaction_records": {
+        "step_histories": [
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4"
+                ],
+                "response_message": "m5"
+            },
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6"
+                ],
+                "response_message": "m7"
+            },
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6",
+                    "m7",
+                    "m8"
+                ],
+                "response_message": "m9"
+            },
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6",
+                    "m7",
+                    "m8",
+                    "m9",
+                    "m10"
+                ],
+                "response_message": "m11"
+            },
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6",
+                    "m7",
+                    "m8",
+                    "m9",
+                    "m10",
+                    "m11",
+                    "m12"
+                ],
+                "response_message": "m13"
+            },
+            {
+                "prompt_messages": [
+                    "m1",
+                    "m2",
+                    "m3",
+                    "m4",
+                    "m5",
+                    "m6",
+                    "m7",
+                    "m8",
+                    "m9",
+                    "m10",
+                    "m11",
+                    "m12",
+                    "m13",
+                    "m14"
+                ],
+                "response_message": "m15"
+            }
+        ],
+        "mid_to_message": {
+            "m1": {
+                "role": "system",
+                "content": "You are a debugging assistant. You will be presented with a failing test, and tools (functions) to access the source code of the system under test (SUT). Your task is to provide a step-by-step explanation of how the bug occurred, based on the failing test and the information you retrieved using tests about the SUT. You will be given 9 chances to interact with functions to gather relevant information. An example answer would look like follows.\n\nTitle: Diagnosis of test `testGenerateURLFragment`\nDetails: The test `testGenerateURLFragment` checks whether HTML entities such as `&quot;` are correctly escaped to their corresponding character by the `StandardToolTipTagFragmentGenerator.generateToolTipFragment` method. However, the test failure indicates that this is not the case. Following the execution path, we find that `StandardToolTipTagFragmentGenerator.generateToolTipFragment` is not escaping any HTML code; instead, it is using its input `toolTipText` as is. Consequently, un-escaped strings are being returned, which leads to the error demonstrated by the test.\n\nAfter providing this diagnosis, you will be prompted to suggest which methods would be the best locations to be fixed. The answers should be in the form of `ClassName.MethodName(ArgType1, ArgType2, ...)` without commentary (one per line), as your answer will be automatically processed before finally being presented to the user."
+            },
+            "m2": {
+                "role": "user",
+                "content": "The test `['org.apache.commons.lang3.StringUtilsEqualsIndexOfTest.testContainsAny_StringWithBadSupplementaryChars()']` failed.\nThe test looks like:\n\n```java\n182 :     public void testContainsAny_StringWithBadSupplementaryChars() {\n183 :         // Test edge case: 1/2 of a (broken) supplementary char\n186 :         assertEquals(false, StringUtils.containsAny(CharUSuppCharLow, CharU20001)); // error occurred here\n190 :     }\n```\n\nThe passing test with the highest token similarity to the failing test looks like:\n\n ```195 :     public void testContainsAny_StringWithSupplementaryChars() {\n196 :         assertEquals(true, StringUtils.containsAny(CharU20000 + CharU20001, CharU20000));\n197 :         assertEquals(true, StringUtils.containsAny(CharU20000 + CharU20001, CharU20001));\n198 :         assertEquals(true, StringUtils.containsAny(CharU20000, CharU20000));\n199 :         // Sanity check:\n200 :         assertEquals(-1, CharU20000.indexOf(CharU20001));\n201 :         assertEquals(0, CharU20000.indexOf(CharU20001.charAt(0)));\n202 :         assertEquals(-1, CharU20000.indexOf(CharU20001.charAt(1)));\n203 :         // Test:\n204 :         assertEquals(false, StringUtils.containsAny(CharU20000, CharU20001));\n205 :         assertEquals(false, StringUtils.containsAny(CharU20001, CharU20000));\n206 :     }\n```\n\nIt failed with the following error message and call stack:\n\n```\njunit.framework.AssertionFailedError: expected:<false> but was:<true>\n\tat org.apache.commons.lang3.StringUtilsEqualsIndexOfTest.testContainsAny_StringWithBadSupplementaryChars(StringUtilsEqualsIndexOfTest.java:186)\n```\n\nStart by calling the `get_failing_tests_covered_classes` function."
+            },
+            "m3": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_failing_tests_covered_classes",
+                    "arguments": "{}"
+                }
+            },
+            "m4": {
+                "role": "function",
+                "name": "get_failing_tests_covered_classes",
+                "content": "{\"org.apache.commons.lang3\": [\"ArrayUtils\", \"StringUtils\"]}"
+            },
+            "m5": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_failing_tests_covered_methods_for_class",
+                    "arguments": "{\n  \"class_name\": \"org.apache.commons.lang3.StringUtils\"\n}"
+                }
+            },
+            "m6": {
+                "role": "function",
+                "name": "get_failing_tests_covered_methods_for_class",
+                "content": "[\".containsNone(java.lang.CharSequence, char[])\", \".containsNone(java.lang.CharSequence, java.lang.String)\", \".indexOfAny(java.lang.CharSequence, char[])\", \".containsAny(java.lang.CharSequence, char[])\", \".indexOfAny(java.lang.CharSequence, java.lang.String)\", \".indexOfAnyBut(java.lang.String, java.lang.String)\", \".isEmpty(java.lang.CharSequence)\", \".containsAny(java.lang.CharSequence, java.lang.String)\", \".indexOfAnyBut(java.lang.CharSequence, char[])\"]"
+            },
+            "m7": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_code_snippet",
+                    "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])\"\n}"
+                }
+            },
+            "m8": {
+                "role": "function",
+                "name": "get_code_snippet",
+                "content": "\"1443 :     public static boolean containsAny(CharSequence cs, char[] searchChars) {\\n1444 :         if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\\n1445 :             return false;\\n1446 :         }\\n1447 :         int csLength = cs.length();\\n1448 :         int searchLength = searchChars.length;\\n1449 :         int csLast = csLength - 1;\\n1450 :         int searchLast = searchLength - 1;\\n1451 :         for (int i = 0; i < csLength; i++) {\\n1452 :             char ch = cs.charAt(i);\\n1453 :             for (int j = 0; j < searchLength; j++) {\\n1454 :                 if (searchChars[j] == ch) {\\n1455 :                     if (i < csLast && j < searchLast && ch >= Character.MIN_HIGH_SURROGATE && ch <= Character.MAX_HIGH_SURROGATE) {\\n1456 :                             // missing low surrogate, fine, like String.indexOf(String)\\n1457 :                         if (searchChars[j + 1] == cs.charAt(i + 1)) {\\n1458 :                             return true;\\n1459 :                         }\\n1460 :                     } else {\\n1461 :                         // ch is in the Basic Multilingual Plane\\n1462 :                         return true;\\n1463 :                     }\\n1464 :                 }\\n1465 :             }\\n1466 :         }\\n1467 :         return false;\\n1468 :     }\""
+            },
+            "m9": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_code_snippet",
+                    "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)\"\n}"
+                }
+            },
+            "m10": {
+                "role": "function",
+                "name": "get_code_snippet",
+                "content": "\"1497 :     public static boolean containsAny(CharSequence cs, String searchChars) {\\n1498 :         if (searchChars == null) {\\n1499 :             return false;\\n1500 :         }\\n1501 :         return containsAny(cs, searchChars.toCharArray());\\n1502 :     }\""
+            },
+            "m11": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_code_snippet",
+                    "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.indexOfAny(java.lang.CharSequence, char[])\"\n}"
+                }
+            },
+            "m12": {
+                "role": "function",
+                "name": "get_code_snippet",
+                "content": "\"1371 :     public static int indexOfAny(CharSequence cs, char[] searchChars) {\\n1372 :         if (isEmpty(cs) || ArrayUtils.isEmpty(searchChars)) {\\n1373 :             return INDEX_NOT_FOUND;\\n1374 :         }\\n1375 :         int csLen = cs.length();\\n1376 :         int searchLen = searchChars.length;\\n1377 :         for (int i = 0; i < csLen; i++) {\\n1378 :             char ch = cs.charAt(i);\\n1379 :             for (int j = 0; j < searchLen; j++) {\\n1380 :                 if (searchChars[j] == ch) {\\n1381 :                         // ch is a supplementary character\\n1382 :                         return i;\\n1383 :                 }\\n1384 :             }\\n1385 :         }\\n1386 :         return INDEX_NOT_FOUND;\\n1387 :     }\""
+            },
+            "m13": {
+                "role": "assistant",
+                "content": null,
+                "function_call": {
+                    "name": "get_code_snippet",
+                    "arguments": "{\n  \"signature\": \"org.apache.commons.lang3.StringUtils.indexOfAny(java.lang.CharSequence, java.lang.String)\"\n}"
+                }
+            },
+            "m14": {
+                "role": "function",
+                "name": "get_code_snippet",
+                "content": "\"1411 :     public static int indexOfAny(CharSequence cs, String searchChars) {\\n1412 :         if (isEmpty(cs) || isEmpty(searchChars)) {\\n1413 :             return INDEX_NOT_FOUND;\\n1414 :         }\\n1415 :         return indexOfAny(cs, searchChars.toCharArray());\\n1416 :     }\""
+            },
+            "m15": {
+                "role": "assistant",
+                "content": "Based on the failing test `testContainsAny_StringWithBadSupplementaryChars()` in the class `org.apache.commons.lang3.StringUtils`, it is trying to test the `containsAny` method. The method is overloaded, with one version taking a `CharSequence` and a `char[]` as parameters, and another version taking a `CharSequence` and a `String` as parameters. Both methods check if any of the characters specified in the `searchChars` parameter exist in the input `CharSequence`.\n\nLooking at the code snippet for the `containsAny(CharSequence, char[])` method, we can see that it iterates over the characters in the input `CharSequence` and the `searchChars` array. If a match is found, it checks if the character is a supplementary character, and if so, it returns `true`. If the character is not a supplementary character, it also returns `true`. If no match is found, it returns `false`.\n\nUnfortunately, we don't have access to the implementation of the `containsAny(CharSequence, String)` method. However, based on the code snippet of the `containsAny(CharSequence, char[])` method, we can assume that the `containsAny(CharSequence, String)` method likely delegates to the `containsAny(CharSequence, char[])` method, but converts the `searchChars` `String` to a `char[]` using `searchChars.toCharArray()`.\n\nThe failing test is expecting the result of `StringUtils.containsAny(CharUSuppCharLow, CharU20001)` to be `false`. However, it is returning `true`. This suggests that the `CharUSuppCharLow` contains at least one character from the `CharU20001` array.\n\nTo identify the cause of the issue, we need more information about the values of `CharUSuppCharLow` and `CharU20001`. Unfortunately, we don't have access to the values of these variables in the failing test.\n\nTo fix this issue, we need to investigate why the `containsAny` method is returning `true` instead of `false` in this case. This could be due to a bug in the implementation of the method, or it could be caused by incorrect test inputs.\n\nSuggested fix:\n- Investigate the implementation of the `containsAny(CharSequence, char[])` method to ensure it handles supplementary characters correctly.\n- Investigate the implementation of the `containsAny(CharSequence, String)` method and ensure it correctly delegates to the `containsAny(CharSequence, char[])` method.\n\nPossible methods to fix:\n- `org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])`\n- `org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)`"
+            }
+        }
+    },
+    "buggy_methods": {
+        "org.apache.commons.lang3.StringUtils.containsNone(java.lang.CharSequence, char[])": {
+            "is_found": false,
+            "matching_answer": []
+        },
+        "org.apache.commons.lang3.StringUtils.indexOfAny(java.lang.CharSequence, char[])": {
+            "is_found": false,
+            "matching_answer": []
+        },
+        "org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])": {
+            "is_found": true,
+            "matching_answer": [
+                "org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, char[])"
+            ]
+        },
+        "org.apache.commons.lang3.StringUtils.indexOfAnyBut(java.lang.String, java.lang.String)": {
+            "is_found": false,
+            "matching_answer": []
+        },
+        "org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)": {
+            "is_found": true,
+            "matching_answer": [
+                "org.apache.commons.lang3.StringUtils.containsAny(java.lang.CharSequence, java.lang.String)"
+            ]
+        },
+        "org.apache.commons.lang3.StringUtils.indexOfAnyBut(java.lang.CharSequence, char[])": {
+            "is_found": false,
+            "matching_answer": []
+        }
+    }
+}
