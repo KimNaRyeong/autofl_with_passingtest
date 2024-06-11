@@ -12,7 +12,7 @@ RESULT_DIR = './results/'
 class AutoDebugger(llm_utils.OpenAIEngine):
     def __init__(self, bug_name, model_type, system_file, test_offset=None,
             max_num_tests=None, allow_multi_predictions=False,
-            summarize_messages=False, debug=False, **ri_kwargs):
+            summarize_messages=False, debug=False, num_passing_test = 1, **ri_kwargs):
         super().__init__()
         self._bug_name = bug_name
         self._model = model_type
@@ -23,6 +23,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         self._summarize_messages = summarize_messages
         self._system_file = system_file
         self._debug = debug
+        self._num_passing_test = num_passing_test
 
     def _replace_last_with_memo(self, memo):
         self.messages = self.messages[:-1] # replace recent two queries with memo
@@ -74,7 +75,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
             if self._ri.get_test_snippet(signature) is not None
         ]
 
-        passing_test_snippet = self._ri._get_most_similar_passing_test_snippet(self._bug_name)
+        passing_test_snippet = self._ri._get_most_similar_passing_test_snippet(self._bug_name, self._num_passing_test)
         
         if self._test_offset is not None:
             # rotate list
@@ -91,8 +92,11 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         test_snippets = "\n\n".join(self._ri.get_test_snippet(signature).rstrip() for signature in fail_test_signatures)
         user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         
-        if passing_test_snippet != "":
-            user_message += f"The passing test with the highest token similarity to the failing test looks like:\n\n ```{passing_test_snippet}\n```\n\n"
+        if len(passing_test_snippet) != 0:
+            user_message += f"The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest token similarity to the failing test looks like:\n\n"
+            for test in passing_test_snippet:
+
+                user_message += f"```{test}\n```\n\n"
         else:
             print("no passing test snippet")
             
@@ -241,6 +245,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--out', default='test.json')
     parser.add_argument('-p', '--prompt', default='prompts/system_msg_expbug.txt')
     parser.add_argument('-t', '--max_num_tests', default=None, type=int)
+    parser.add_argument('-n', '--number_of_passing_test', default=1)
     parser.add_argument('--test_offset', default=0, type=int)
     parser.add_argument('--max_budget', default=10, type=int)
     parser.add_argument('--allow_multi_predictions', action="store_true")
@@ -257,7 +262,8 @@ if __name__ == '__main__':
         summarize_messages=args.summarize_messages,
         show_line_number=args.show_line_number,
         postprocess_test_snippet=args.postprocess_test_snippet,
-        debug=args.debug
+        debug=args.debug,
+        num_passing_test = int(args.number_of_passing_test)
     )
 
     try:
