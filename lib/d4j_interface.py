@@ -105,22 +105,25 @@ class D4JRepositoryInterface():
         self.language = 'java'
         self.initial_coverage_getter = "get_failing_tests_covered_classes"
 
-    def _get_most_similar_passing_test_snippet(self, bug_name):
+    def _get_most_similar_passing_test_snippet(self, bug_name, num_passing_test):
         with open(os.path.join(BUG_INFO_DIR, bug_name, "token_similarity.json")) as f:
             similarities = json.load(f)
         failing_test_signatures = similarities.keys()
-        similarity = 0
-        similar_test_signature = ""
+        similar_test_signature = []
+        similar_test_snippets = []
+        for i in range(num_passing_test):
+            similarity = 0
 
-        for failing_test_signature in failing_test_signatures:
-            sorted_similarities = sorted(similarities[failing_test_signature].items(), key = lambda item:item[1], reverse = True)
-            for sorted_similarity in sorted_similarities:
-                if sorted_similarity[0] not in failing_test_signatures and similarity < sorted_similarity[1]:
-                    similarity = sorted_similarity[1]
-                    similar_test_signature = sorted_similarity[0]
-
-        most_similar_test_snippet = self.get_test_snippet(similar_test_signature)
-        return most_similar_test_snippet
+            for failing_test_signature in failing_test_signatures:
+                sorted_similarities = sorted(similarities[failing_test_signature].items(), key = lambda item:item[1], reverse = True)
+                for sorted_similarity in sorted_similarities:
+                    if sorted_similarity[0] not in similar_test_signature and sorted_similarity[0] not in failing_test_signatures and similarity < sorted_similarity[1]:
+                        similarity = sorted_similarity[1]
+                        similar_test_signature.append(sorted_similarity[0])
+        
+        for test in similar_test_signature:
+            similar_test_snippets.append(self.get_test_snippet(test))
+        return similar_test_snippets
         
     def _load_fail_info(self, bug_name):
         fail_info = dict()
