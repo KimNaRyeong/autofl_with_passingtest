@@ -99,9 +99,12 @@ class AutoDebugger(llm_utils.OpenAIEngine):
                 user_message += f"```{test}\n```\n\n"
         else:
             print("no passing test snippet")
+        
             
         failing_traces = "\n\n".join(self._ri.get_fail_info(signature, minimize=True).rstrip() for signature in fail_test_signatures)
         user_message += f"It failed with the following error message and call stack:\n\n```\n{failing_traces}\n```\n\n"
+
+        
 
         user_message += f'Start by calling the `{self._ri.initial_coverage_getter}` function.'
 
