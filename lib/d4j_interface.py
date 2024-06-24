@@ -33,8 +33,49 @@ class D4JRepositoryInterface():
             }
         },
         {
+            "name": "get_passing_tests_covered_classes",
+            "description": "This function retrieves a set of classes covered by passing tests and groups them by their package names.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "return": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "dictionary",
+                    "items": {
+                        "type": "string",
+                        "description": "The simple class name belonging to the package."
+                    }
+                },
+                "description": "A dictionary where keys are package names, and values are lists of simple class names belonging to that package."
+            }
+        },
+        {
             "name": "get_failing_tests_covered_methods_for_class",
             "description": "This function takes a class_name as input and returns a list of method names covered by failing tests for the specified class in the program under test.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "class_name": {
+                        "type": "string",
+                        "description": "The method name of the class in the program under test, e.g., \"com.example.myapp.MyClass\"."
+                    }
+                },
+                "required": ["class_name"]
+            },
+            "return": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "description": "The method signature."
+                }
+            }
+        },
+        {
+            "name": "get_passing_tests_covered_methods_for_class",
+            "description": "This function takes a class_name as input and returns a list of method names covered by passing tests for the specified class in the program under test.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -91,7 +132,7 @@ class D4JRepositoryInterface():
         }
     ]
 
-    def __init__(self, bug_name, show_line_number=True, postprocess_test_snippet=True, max_repetition_in_stack=5):
+    def __init__(self, bug_name, similarity, show_line_number=True, postprocess_test_snippet=True, max_repetition_in_stack=5):
         self._method_lists = self._load_method_lists(bug_name)
         self._buggy_methods = [
             method["signature"] for method in self._method_lists if method["is_bug"]
@@ -104,10 +145,41 @@ class D4JRepositoryInterface():
         self._field_lists = self._load_field_lists(bug_name) # list of dict
         self.language = 'java'
         self.initial_coverage_getter = "get_failing_tests_covered_classes"
+        # self.initial_coverage_getter = "get_passing_tests_covered_classes"
 
-    def _get_most_similar_passing_test_snippet(self, bug_name, num_passing_test):
-        with open(os.path.join(BUG_INFO_DIR, bug_name, "token_similarity.json")) as f:
-            similarities = json.load(f)
+        self.similarity = similarity
+        self._similar_passing_test_sig = self._get_most_similar_passing_test_sig(bug_name, 1)
+        self._passing_test_covered_method_lists = self._get_method_lists_covered_passing_test(bug_name)
+
+    def _get_method_lists_covered_passing_test(self, bug_name):
+        with open(os.path.join(BUG_INFO_DIR, bug_name, "test_covered_method_pairs.json")) as f:
+            test_covered_methods_pairs = json.load(f)
+            passing_test_covered_methods_list = []
+            # print(type(test_covered_methods_pairs))
+            # print(self._similar_passing_test_sig[0])
+            if self._similar_passing_test_sig[0] in test_covered_methods_pairs.keys():
+                
+                passing_test_covered_methods_sig = test_covered_methods_pairs[self._similar_passing_test_sig[0]]
+                
+
+                for method in self._method_lists:
+                    if method["signature"] in passing_test_covered_methods_sig:
+                        # print(method["signature"])
+                        passing_test_covered_methods_list.append(method)
+            else:
+                print("There is no signature in pa")
+                
+        return passing_test_covered_methods_list
+
+    def _get_most_similar_passing_test_sig(self, bug_name, num_passing_test):
+        if self.similarity == 'token':
+            with open(os.path.join(BUG_INFO_DIR, bug_name, "token_similarity.json")) as f:
+                similarities = json.load(f)
+            print("token")
+        elif self.similarity == 'cov':
+            with open(os.path.join(BUG_INFO_DIR, bug_name, "coverage_similarity.json")) as f:
+                similarities = json.load(f)
+            print("coverage")
         failing_test_signatures = similarities.keys()
         similar_test_signature = []
         similar_test_snippets = []
@@ -121,7 +193,14 @@ class D4JRepositoryInterface():
                         similarity = sorted_similarity[1]
                         similar_test_signature.append(sorted_similarity[0])
         
-        for test in similar_test_signature:
+        # for test in similar_test_signature:
+            # similar_test_snippets.append(self.get_test_snippet(test))
+        # return similar_test_snippets
+        return similar_test_signature
+    
+    def _get_most_similar_passing_test_snippet(self, bug_name):
+        similar_test_snippets = []
+        for test in self._similar_passing_test_sig:
             similar_test_snippets.append(self.get_test_snippet(test))
         return similar_test_snippets
         
@@ -320,6 +399,13 @@ class D4JRepositoryInterface():
         for cls in classes:
             grouped_by_packages[name_utils.drop_base_name(cls)].append(name_utils.get_base_name(cls))
         return grouped_by_packages
+    
+    def get_passing_tests_covered_classes(self):
+        classes = set([m["class_name"] for m in self._passing_test_covered_method_lists])
+        grouped_by_packages = defaultdict(list)
+        for cls in classes:
+            grouped_by_packages[name_utils.drop_base_name(cls)].append(name_utils.get_base_name(cls))
+        return grouped_by_packages
 
     def get_failing_tests_covered_methods_for_class(self, class_name):
         methods = [
@@ -333,6 +419,19 @@ class D4JRepositoryInterface():
             return {'error_message': 'You can obtain test-related information via the `get_code_snippet()` function.'}
         else:
             return {"error_message": f"No method information available for the class: {class_name}. The available class names can be found by calling get_failing_tests_covered_classes()."}
+    
+    def get_passing_tests_covered_methods_for_class(self, class_name):
+        methods = [
+            method["signature"].removeprefix(class_name)
+            for method in self._passing_test_covered_method_lists if method["class_name"] == class_name
+        ]
+
+        if methods:
+            return methods
+        elif any(class_name in test['signature'] for test in self._test_lists):
+            return {'error_message': 'You can obtain test-related information via the `get_code_snippet()` function.'}
+        else:
+            return {"error_message": f"No method information available for the class: {class_name}. The available class names can be found by calling get_passing_tests_covered_classes()."}
 
     def get_code_snippet(self, signature, num_max_candidates=5):
         def _display_snippet(component): # either field or method/constructor in SUT
@@ -524,7 +623,9 @@ class D4JRepositoryInterface():
     def fname2func(self):
         fname2func = {
             "get_failing_tests_covered_classes": self.get_failing_tests_covered_classes,
+            "get_passing_tests_covered_classes": self.get_passing_tests_covered_classes,
             "get_failing_tests_covered_methods_for_class": self.get_failing_tests_covered_methods_for_class,
+            "get_passing_tests_covered_methods_for_class": self.get_passing_tests_covered_methods_for_class,
             "get_code_snippet": self.get_code_snippet,
             "get_comments": self.get_comments,
         }
