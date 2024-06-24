@@ -11,12 +11,13 @@ RESULT_DIR = './results/'
 
 class AutoDebugger(llm_utils.OpenAIEngine):
     def __init__(self, bug_name, model_type, system_file, test_offset=None,
-            max_num_tests=None, allow_multi_predictions=False,
-            summarize_messages=False, debug=False, num_passing_test = 1, **ri_kwargs):
+            max_num_tests=None, allow_multi_predictions=False, passing_test = True,
+            summarize_messages=False, debug=False, num_passing_test = 1, similarity = 'cov', **ri_kwargs):
         super().__init__()
         self._bug_name = bug_name
         self._model = model_type
-        self._ri = get_repo_interface(bug_name, **ri_kwargs)
+        self._similarity = similarity
+        self._ri = get_repo_interface(bug_name, self._similarity, **ri_kwargs)
         self._test_offset = test_offset
         self._max_num_tests = max_num_tests
         self._allow_multi_predictions = allow_multi_predictions
@@ -24,6 +25,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         self._system_file = system_file
         self._debug = debug
         self._num_passing_test = num_passing_test
+        self._passing_test = passing_test
 
     def _replace_last_with_memo(self, memo):
         self.messages = self.messages[:-1] # replace recent two queries with memo
@@ -75,8 +77,6 @@ class AutoDebugger(llm_utils.OpenAIEngine):
             if self._ri.get_test_snippet(signature) is not None
         ]
 
-        passing_test_snippet = self._ri._get_most_similar_passing_test_snippet(self._bug_name, self._num_passing_test)
-        
         if self._test_offset is not None:
             # rotate list
             offset = self._test_offset % len(fail_test_signatures)
@@ -89,18 +89,27 @@ class AutoDebugger(llm_utils.OpenAIEngine):
             raise ValueError(f'Could not find test snippet for bug {self._bug_name}')
 
         user_message = f"The test `{fail_test_signatures}` failed.\n"
+
+        if self._passing_test:
+            # num_passing_test_없애기
+            passing_test_snippet = self._ri._get_most_similar_passing_test_snippet(self._bug_name)
+
+            if len(passing_test_snippet) != 0:
+                if self._similarity == 'token':
+                    user_message += f"You will be given a failing test snippet and a passing test snippet with the highest token similarity to the failing test. The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest token similarity to the failing test looks like:\n\n"
+                elif self._similarity == 'cov':
+                    user_message += f"You will be given a failing test snippet and a passing test snippet with the highest coverage similarity to the failing test. The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest coverage similarity to the failing test looks like:\n\n"
+
+                for test in passing_test_snippet:
+
+                    user_message += f"```{test}\n```\n\n"
+            else:
+                print("no passing test snippet")
+
         test_snippets = "\n\n".join(self._ri.get_test_snippet(signature).rstrip() for signature in fail_test_signatures)
         user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         
-        if len(passing_test_snippet) != 0:
-            user_message += f"The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest token similarity to the failing test looks like:\n\n"
-            for test in passing_test_snippet:
-
-                user_message += f"```{test}\n```\n\n"
-        else:
-            print("no passing test snippet")
         
-            
         failing_traces = "\n\n".join(self._ri.get_fail_info(signature, minimize=True).rstrip() for signature in fail_test_signatures)
         user_message += f"It failed with the following error message and call stack:\n\n```\n{failing_traces}\n```\n\n"
 
@@ -147,6 +156,8 @@ class AutoDebugger(llm_utils.OpenAIEngine):
             functions=self._ri.function_descriptions,
             function_call=function_call_mode,  # auto is default, but we'll be explicit #FIXME
         )
+        # print(self._ri.function_descriptions)
+        # print()
 
         if self._summarize_messages:
             llm_summary = response['choices'][0]['message']['content']
@@ -249,6 +260,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--prompt', default='prompts/system_msg_expbug.txt')
     parser.add_argument('-t', '--max_num_tests', default=None, type=int)
     parser.add_argument('-n', '--number_of_passing_test', default=1)
+    parser.add_argument('-s', '--similarity', default='cov')
+    parser.add_argument('--passing_test', default = True)
     parser.add_argument('--test_offset', default=0, type=int)
     parser.add_argument('--max_budget', default=10, type=int)
     parser.add_argument('--allow_multi_predictions', action="store_true")
@@ -266,7 +279,9 @@ if __name__ == '__main__':
         show_line_number=args.show_line_number,
         postprocess_test_snippet=args.postprocess_test_snippet,
         debug=args.debug,
-        num_passing_test = int(args.number_of_passing_test)
+        num_passing_test = int(args.number_of_passing_test),
+        passing_test = args.passing_test,
+        similarity = args.similarity
     )
 
     try:
