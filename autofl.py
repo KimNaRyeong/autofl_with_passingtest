@@ -93,7 +93,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         
         if len(passing_test_snippet) != 0:
-            user_message += f"The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest token similarity to the failing test looks like:\n\n"
+            user_message += f"The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest coverage similarity to the failing test looks like:\n\n"
             for test in passing_test_snippet:
 
                 user_message += f"```{test}\n```\n\n"

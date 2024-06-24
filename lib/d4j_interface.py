@@ -106,7 +106,7 @@ class D4JRepositoryInterface():
         self.initial_coverage_getter = "get_failing_tests_covered_classes"
 
     def _get_most_similar_passing_test_snippet(self, bug_name, num_passing_test):
-        with open(os.path.join(BUG_INFO_DIR, bug_name, "token_similarity.json")) as f:
+        with open(os.path.join(BUG_INFO_DIR, bug_name, "coverage_similarity.json")) as f:
             similarities = json.load(f)
         failing_test_signatures = similarities.keys()
         similar_test_signature = []
