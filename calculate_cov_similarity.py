@@ -14,7 +14,7 @@ def calculate_cos_similarity(a, b):
 data_dir = './data/defects4j'
 cov_data_dir = './coverage_data'
 sub_dir_list = os.listdir(data_dir)
-sub_dir_list = ['Chart_11']
+sub_dir_list = ['Chart_10']
 
 
 
