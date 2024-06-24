@@ -196,6 +196,7 @@ class D4JRepositoryInterface():
         # for test in similar_test_signature:
             # similar_test_snippets.append(self.get_test_snippet(test))
         # return similar_test_snippets
+        print(similar_test_signature)
         return similar_test_signature
     
     def _get_most_similar_passing_test_snippet(self, bug_name):

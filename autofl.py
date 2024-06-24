@@ -107,7 +107,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
                 print("no passing test snippet")
 
         test_snippets = "\n\n".join(self._ri.get_test_snippet(signature).rstrip() for signature in fail_test_signatures)
-        user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
+        user_message += f"The failing test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         
         
         failing_traces = "\n\n".join(self._ri.get_fail_info(signature, minimize=True).rstrip() for signature in fail_test_signatures)
