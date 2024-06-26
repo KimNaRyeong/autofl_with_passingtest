@@ -17,6 +17,7 @@ def calculate_token_similarity(text1, text2):
 
 data_dir = './data/defects4j'
 sub_dir_list = os.listdir(data_dir)
+sub_dir_list = ['Lang_28']
 
 
 
@@ -31,21 +32,23 @@ for sub_dir in tqdm(sub_dir_list):
                 failing_test_signature = failing_test.replace("::", ".")+"()"
                 similarities[failing_test_signature] = {}
 
-            with open(test_snippet_file, 'r', encoding='utf-8') as tf:
-                test_snippets = json.load(tf)
-                # compare_test_signature = 'com.google.javascript.jscomp.TypeCheckTest.testDuplicateLocalVarDecl()'
-                for test in test_snippets:
-                    if test['signature'] == failing_test_signature:
-                        failing_test_snippet = test['snippet']
-                        # print(failing_test_snippet)
-                    # elif test['signature'] == compare_test_signature:
-                        # print(test['snippet'])
+                with open(test_snippet_file, 'r', encoding='utf-8') as tf:
+                    test_snippets = json.load(tf)
+                    # compare_test_signature = 'com.google.javascript.jscomp.TypeCheckTest.testDuplicateLocalVarDecl()'
+                    for test in test_snippets:
+                        if test['signature'] == failing_test_signature:
+                            failing_test_snippet = test['snippet']
+                            # print(failing_test_snippet)
+                        # elif test['signature'] == compare_test_signature:
+                            # print(test['snippet'])
+                    print(test)
 
-                for test in test_snippets:
-                    if test['signature'] != failing_test_signature:
-                        passing_test_snippet = test['snippet']
-                        similarity = calculate_token_similarity(passing_test_snippet, failing_test_snippet)
-                        similarities[failing_test_signature][test['signature']] = similarity
+                    for test in test_snippets:
+                        if test['signature'] != failing_test_signature:
+                            passing_test_snippet = test['snippet']
+                            similarity = calculate_token_similarity(passing_test_snippet, failing_test_snippet)
+                            similarities[failing_test_signature][test['signature']] = similarity
+    print(similarities)
 
     output_file = os.path.join(data_dir, sub_dir, 'token_similarity.json')
     with open(output_file, 'w') as wf:

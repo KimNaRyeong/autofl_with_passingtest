@@ -157,17 +157,20 @@ class D4JRepositoryInterface():
             passing_test_covered_methods_list = []
             # print(type(test_covered_methods_pairs))
             # print(self._similar_passing_test_sig[0])
-            if self._similar_passing_test_sig[0] in test_covered_methods_pairs.keys():
-                
-                passing_test_covered_methods_sig = test_covered_methods_pairs[self._similar_passing_test_sig[0]]
-                
+            if len(self._similar_passing_test_sig) > 0:
+                if self._similar_passing_test_sig[0] in test_covered_methods_pairs.keys():
 
-                for method in self._method_lists:
-                    if method["signature"] in passing_test_covered_methods_sig:
-                        # print(method["signature"])
-                        passing_test_covered_methods_list.append(method)
+                    passing_test_covered_methods_sig = test_covered_methods_pairs[self._similar_passing_test_sig[0]]
+
+
+                    for method in self._method_lists:
+                        if method["signature"] in passing_test_covered_methods_sig:
+                            # print(method["signature"])
+                            passing_test_covered_methods_list.append(method)
+                else:
+                    print("There is no signature in pa")
             else:
-                print("There is no signature in pa")
+                passing_test_covered_methods_list = []
                 
         return passing_test_covered_methods_list
 

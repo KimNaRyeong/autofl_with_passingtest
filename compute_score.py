@@ -89,7 +89,7 @@ def compute_autofl_scores(result_dirs, project=None, verbose=False):
             """
 
             # 1. Initialize
-            ri = get_repo_interface(bug_name)
+            ri = get_repo_interface(bug_name, "token")
 
             # 2. Get mactching methods
             predicted_methods = {}
@@ -116,7 +116,7 @@ def compute_autofl_scores(result_dirs, project=None, verbose=False):
     for bug_name in score_results:
         # If there are no methods that are matched with the predictions
         # Evenly distribute the score "1" to all methods 
-        ri = get_repo_interface(bug_name)
+        ri = get_repo_interface(bug_name, "token")
         all_methods = ri.method_signatures
         score_result = score_results[bug_name]
         num_all_runs = sum([len(json_status[bug_name][s]) for s in json_status[bug_name]])
@@ -212,7 +212,7 @@ def add_auxiliary_scores(json_files, autofl_scores, language, default_aux_score=
 
     for bug_name in bug_name_iterator:
         # Set up
-        ri = get_repo_interface(bug_name)
+        ri = get_repo_interface(bug_name, "token")
 
         # 1. get num failing tests
         if language == 'java':
@@ -280,7 +280,7 @@ def assign_rank(autofl_scores):
 def get_buggy_method_ranks(method_scores, key="autofl_rank"):
     buggy_method_ranks = {}
     for bug_name in method_scores:
-        ri = get_repo_interface(bug_name)
+        ri = get_repo_interface(bug_name, "token")
         buggy_method_ranks[bug_name] = {}
         for method in ri.buggy_method_signatures:
             rank = method_scores[bug_name][method]["rank"] if method in method_scores[bug_name] else None
