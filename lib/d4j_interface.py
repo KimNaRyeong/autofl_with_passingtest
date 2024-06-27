@@ -123,6 +123,7 @@ class D4JRepositoryInterface():
         
         for test in similar_test_signature:
             similar_test_snippets.append(self.get_test_snippet(test))
+        # print(similar_test_snippets)
         return similar_test_snippets
         
     def _load_fail_info(self, bug_name):

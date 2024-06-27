@@ -76,7 +76,6 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         ]
 
         passing_test_snippet = self._ri._get_most_similar_passing_test_snippet(self._bug_name, self._num_passing_test)
-        
         if self._test_offset is not None:
             # rotate list
             offset = self._test_offset % len(fail_test_signatures)
@@ -90,15 +89,18 @@ class AutoDebugger(llm_utils.OpenAIEngine):
 
         user_message = f"The test `{fail_test_signatures}` failed.\n"
         test_snippets = "\n\n".join(self._ri.get_test_snippet(signature).rstrip() for signature in fail_test_signatures)
-        user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
+        
         
         if len(passing_test_snippet) != 0:
-            user_message += f"The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest coverage similarity to the failing test looks like:\n\n"
+            # print("kk")
+            user_message += f"You will be given a failing test snippet and a passing test snippet with the highest coverage similarity to the failing test. The functions covered by passing tests are less likely to contain bugs. This means that if a test case has successfully passed, the likelihood of a bug existing in the corresponding function is relatively low. The passing tests with the highest coverage similarity to the failing test looks like:\n\n"
             for test in passing_test_snippet:
 
                 user_message += f"```{test}\n```\n\n"
         else:
             print("no passing test snippet")
+        
+        user_message += f"The failing test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         
             
         failing_traces = "\n\n".join(self._ri.get_fail_info(signature, minimize=True).rstrip() for signature in fail_test_signatures)
@@ -107,7 +109,6 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         
 
         user_message += f'Start by calling the `{self._ri.initial_coverage_getter}` function.'
-
         self._append_to_messages({
             'role': 'user',
             'content': user_message,
