@@ -145,7 +145,7 @@ class D4JRepositoryInterface():
         self._field_lists = self._load_field_lists(bug_name) # list of dict
         self.language = 'java'
         self.initial_coverage_getter = "get_failing_tests_covered_classes"
-        # self.initial_coverage_getter = "get_passing_tests_covered_classes"
+        self.passing_test_coverage_getter = "get_passing_tests_covered_classes"
 
         self.similarity = similarity
         self._similar_passing_test_sig = self._get_most_similar_passing_test_sig(bug_name, 1)

@@ -1,6 +1,6 @@
 import json, os, shutil
 
-dest_dir = './coverage_data'
+dest_dir = './coverage_data_old'
 source_dir = "/home/coinse/kimnal/CS453/defects4j/coverage_data"
 
 # already_exist_project = os.listdir(dest_dir)

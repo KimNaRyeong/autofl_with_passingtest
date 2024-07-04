@@ -4,9 +4,9 @@ file_path = './results/passing_test_and_explain_5/gpt-3.5-turbo-0125/XFL-Chart_1
 
 
 file_path = './test.json'
-file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/coverage_fun_token_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
-file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/coverage_fun_cov_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
-file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/with_passing_test_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
+# file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/coverage_fun_token_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
+# file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/coverage_fun_cov_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
+# file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/with_passing_test_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
 
 # Basic
 file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/d4j_autofl_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
@@ -16,6 +16,10 @@ file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/with_passing_te
 
 # passing test with explanation
 file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/no_func_cov_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
+
+file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/coverage_fun_diff_exp_cov_sim_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
+
+file_path = '/home/coinse/kimnal/autofl_with_passingtest/results/just_cov_sim_passing_test_1/gpt-3.5-turbo-0125/XFL-Chart_1.json'
 with open(file_path, 'r') as f:
     dialog = json.load(f)
 
