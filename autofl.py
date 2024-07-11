@@ -111,7 +111,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
         user_message += f"The test looks like:\n\n```{self._ri.language}\n{test_snippets}\n```\n\n"
         if len(passing_test_snippet) != 0:
             # print("kk")
-            user_message += f"The passing test with the highest coverage similarity to the failing test looks like:\n\n"
+            user_message += f"The passing test with the highest token similarity to the failing test looks like:\n\n"
             for test in passing_test_snippet:
 
                 user_message += f"```{test}\n```\n\n"
@@ -227,6 +227,7 @@ class AutoDebugger(llm_utils.OpenAIEngine):
             pred_expr: self._ri.get_matching_method_signatures(pred_expr)
             for pred_expr in pred_exprs
         }
+
 
         grade_result = {}
         for method in self._ri.buggy_method_signatures:
